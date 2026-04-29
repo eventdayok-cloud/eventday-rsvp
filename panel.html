@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Panel EventDay</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Jost:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --rose: #c9a09a;
+    --rose-light: #f0e6e4;
+    --rose-lighter: #f8f2f1;
+    --rose-dark: #8c5f5a;
+    --text: #3d2b2b;
+    --text-muted: #9c7e7e;
+    --border: #ddd0cc;
+    --white: #fdfaf9;
+    --bg: #f4ede8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Jost', sans-serif; background: var(--bg); min-height: 100vh; color: var(--text); }
+
+  /* LOGIN */
+  .login-wrap {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem;
+  }
+  .login-box {
+    background: var(--white); border: 1px solid var(--border); border-radius: 16px;
+    padding: 2.5rem 2rem; width: 100%; max-width: 360px; text-align: center;
+  }
+  .login-box h1 { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 300; margin-bottom: 0.3rem; }
+  .login-box p { font-size: 13px; color: var(--text-muted); margin-bottom: 1.8rem; }
+  .login-box input {
+    width: 100%; padding: 11px 14px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--rose-lighter); font-family: 'Jost', sans-serif; font-size: 14px;
+    color: var(--text); outline: none; margin-bottom: 1rem;
+  }
+  .login-box input:focus { border-color: var(--rose); background: var(--white); }
+  .btn {
+    width: 100%; padding: 12px; background: var(--rose); color: white; border: none;
+    border-radius: 40px; font-family: 'Jost', sans-serif; font-size: 13px;
+    letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; transition: background 0.2s;
+  }
+  .btn:hover { background: var(--rose-dark); }
+  .error-msg { font-size: 13px; color: #b96e6e; margin-top: 0.8rem; }
+
+  /* PANEL */
+  .panel-wrap { display: none; max-width: 760px; margin: 0 auto; padding: 2rem 1rem; }
+  .panel-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.8rem; flex-wrap: wrap; gap: 1rem; }
+  .panel-top h1 { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 300; }
+  .logout-btn {
+    font-size: 12px; padding: 6px 14px; border: 1px solid var(--border); border-radius: 20px;
+    background: none; color: var(--text-muted); cursor: pointer; letter-spacing: 0.05em;
+  }
+  .logout-btn:hover { border-color: var(--rose); color: var(--rose-dark); }
+
+  /* SELECTOR DE EVENTO */
+  .event-selector { margin-bottom: 1.5rem; }
+  .event-selector label { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 6px; }
+  .event-selector input {
+    padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--white); font-family: 'Jost', sans-serif; font-size: 14px;
+    color: var(--text); outline: none; width: 260px; max-width: 100%;
+  }
+  .event-selector input:focus { border-color: var(--rose); }
+
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 1.5rem; }
+  .stat { background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; text-align: center; }
+  .stat .num { font-family: 'Cormorant Garamond', serif; font-size: 36px; font-weight: 300; line-height: 1; margin-bottom: 4px; }
+  .stat .lbl { font-size: 11px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-muted); }
+  .stat.green .num { color: #6a9e6a; }
+  .stat.red .num { color: #b96e6e; }
+
+  .filters { display: flex; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .filter-btn {
+    font-family: 'Jost', sans-serif; font-size: 12px; padding: 5px 14px;
+    border: 1px solid var(--border); border-radius: 20px; background: none;
+    color: var(--text-muted); cursor: pointer; transition: all 0.2s; letter-spacing: 0.04em;
+  }
+  .filter-btn.active { background: var(--rose-light); border-color: var(--rose); color: var(--rose-dark); }
+
+  .list { display: flex; flex-direction: column; gap: 8px; }
+  .card {
+    background: var(--white); border: 1px solid var(--border); border-radius: 12px;
+    padding: 14px 16px; display: flex; align-items: center; gap: 14px;
+  }
+  .card-avatar {
+    width: 38px; height: 38px; border-radius: 50%; background: var(--rose-light);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 500; color: var(--rose-dark); flex-shrink: 0;
+  }
+  .card-info { flex: 1; min-width: 0; }
+  .card-name { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 2px; }
+  .card-detail { font-size: 12px; color: var(--text-muted); }
+  .badge { font-size: 11px; padding: 3px 10px; border-radius: 20px; letter-spacing: 0.04em; flex-shrink: 0; }
+  .badge.si { background: #edf6ed; color: #5a8a5a; }
+  .badge.no { background: #f6edec; color: #9a5a5a; }
+  .menu-tag {
+    font-size: 11px; background: var(--rose-lighter); border: 1px solid var(--border);
+    color: var(--text-muted); padding: 2px 7px; border-radius: 10px; margin-left: 6px;
+  }
+
+  .bottom-bar { display: flex; justify-content: flex-end; margin-top: 1rem; }
+  .export-btn {
+    font-family: 'Jost', sans-serif; font-size: 12px; padding: 8px 16px;
+    border: 1px solid var(--border); border-radius: 20px; background: none;
+    color: var(--text-muted); cursor: pointer; letter-spacing: 0.05em;
+  }
+  .export-btn:hover { border-color: var(--rose); color: var(--rose-dark); }
+
+  .empty { text-align: center; padding: 3rem 1rem; color: var(--text-muted); font-size: 14px; }
+  .loading { text-align: center; padding: 2rem; color: var(--text-muted); font-size: 13px; letter-spacing: 0.05em; }
+
+  @media (max-width: 480px) {
+    .stat .num { font-size: 28px; }
+    .panel-top h1 { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="login-wrap">
+  <div class="login-box">
+    <h1>EventDay</h1>
+    <p>Panel de confirmaciones</p>
+    <input type="password" id="pass-input" placeholder="Contraseña" onkeydown="if(event.key==='Enter')login()" />
+    <button class="btn" onclick="login()">Ingresar</button>
+    <p class="error-msg" id="error-msg" style="display:none">Contraseña incorrecta</p>
+  </div>
+</div>
+
+<!-- PANEL -->
+<div class="panel-wrap" id="panel-wrap">
+  <div class="panel-top">
+    <h1>Panel EventDay</h1>
+    <button class="logout-btn" onclick="logout()">Cerrar sesión</button>
+  </div>
+
+  <div class="event-selector">
+    <label>Evento</label>
+    <input type="text" id="evento-input" placeholder="ej: boda-anto-walter" onchange="cargarDatos()" onkeydown="if(event.key==='Enter')cargarDatos()" />
+  </div>
+
+  <div class="stats">
+    <div class="stat green"><div class="num" id="count-si">—</div><div class="lbl">Confirman</div></div>
+    <div class="stat red"><div class="num" id="count-no">—</div><div class="lbl">No asisten</div></div>
+    <div class="stat"><div class="num" id="count-total">—</div><div class="lbl">Total</div></div>
+  </div>
+
+  <div class="filters">
+    <button class="filter-btn active" onclick="filtrar('todos',this)">Todos</button>
+    <button class="filter-btn" onclick="filtrar('si',this)">Confirman</button>
+    <button class="filter-btn" onclick="filtrar('no',this)">No asisten</button>
+  </div>
+
+  <div class="list" id="lista"><div class="empty">Ingresá el nombre del evento para ver las confirmaciones</div></div>
+
+  <div class="bottom-bar">
+    <button class="export-btn" onclick="exportar()">Exportar Excel ↓</button>
+  </div>
+</div>
+
+<script>
+  const PASS = 'eventday2024';
+  const SUPABASE_URL = 'TU_SUPABASE_URL';
+  const SUPABASE_KEY = 'TU_SUPABASE_KEY';
+
+  let todos = [];
+  let filtroActivo = 'todos';
+
+  function login() {
+    const val = document.getElementById('pass-input').value;
+    if (val === PASS) {
+      document.getElementById('login-wrap').style.display = 'none';
+      document.getElementById('panel-wrap').style.display = 'block';
+      document.getElementById('error-msg').style.display = 'none';
+    } else {
+      document.getElementById('error-msg').style.display = 'block';
+    }
+  }
+
+  function logout() {
+    document.getElementById('login-wrap').style.display = 'flex';
+    document.getElementById('panel-wrap').style.display = 'none';
+    document.getElementById('pass-input').value = '';
+    todos = [];
+    renderLista([]);
+  }
+
+  async function cargarDatos() {
+    const evento = document.getElementById('evento-input').value.trim();
+    if (!evento) return;
+    document.getElementById('lista').innerHTML = '<div class="loading">Cargando...</div>';
+    try {
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/confirmaciones?evento=eq.${encodeURIComponent(evento)}&order=created_at.desc`,
+        { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+      );
+      todos = await res.json();
+      filtroActivo = 'todos';
+      document.querySelectorAll('.filter-btn').forEach((b,i) => b.classList.toggle('active', i===0));
+      renderLista(todos);
+    } catch(e) {
+      document.getElementById('lista').innerHTML = '<div class="empty">Error al cargar datos</div>';
+    }
+  }
+
+  function filtrar(f, btn) {
+    filtroActivo = f;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const datos = f === 'todos' ? todos : todos.filter(c => c.asiste === f);
+    renderLista(datos);
+  }
+
+  function iniciales(n) { return n.split(' ').slice(0,2).map(p=>p[0]).join('').toUpperCase(); }
+  function menuLabel(m) { return {normal:'',vegetariano:'Vegetariano',vegano:'Vegano',celiaco:'Celíaco',otro:'Otro'}[m]||''; }
+
+  function renderLista(datos) {
+    const si = todos.filter(c=>c.asiste==='si').length;
+    const no = todos.filter(c=>c.asiste==='no').length;
+    document.getElementById('count-si').textContent = si;
+    document.getElementById('count-no').textContent = no;
+    document.getElementById('count-total').textContent = todos.length;
+
+    if (!datos.length) {
+      document.getElementById('lista').innerHTML = '<div class="empty">Sin confirmaciones aún</div>';
+      return;
+    }
+    document.getElementById('lista').innerHTML = datos.map(c => `
+      <div class="card">
+        <div class="card-avatar">${iniciales(c.nombre)}</div>
+        <div class="card-info">
+          <div class="card-name">${c.nombre}${menuLabel(c.menu)?`<span class="menu-tag">${menuLabel(c.menu)}</span>`:''}</div>
+          <div class="card-detail">${c.acompaniantes?'Con: '+c.acompaniantes:'Sin acompañante'}${c.cancion?' · 🎵 '+c.cancion:''}</div>
+        </div>
+        <span class="badge ${c.asiste}">${c.asiste==='si'?'Confirma':'No asiste'}</span>
+      </div>
+    `).join('');
+  }
+
+  function exportar() {
+    if (!todos.length) return;
+    const rows = [['Nombre','Asiste','Menú','Acompañantes','Canción','Fecha']];
+    todos.forEach(c => rows.push([c.nombre, c.asiste==='si'?'Sí':'No', menuLabel(c.menu)||'Normal', c.acompaniantes||'', c.cancion||'', c.created_at?.slice(0,10)||'']));
+    const csv = rows.map(r => r.map(v=>`"${v}"`).join(',')).join('\n');
+    const a = document.createElement('a');
+    a.href = 'data:text/csv;charset=utf-8,\uFEFF' + encodeURIComponent(csv);
+    a.download = `confirmaciones-${document.getElementById('evento-input').value}.csv`;
+    a.click();
+  }
+</script>
+</body>
+</html>

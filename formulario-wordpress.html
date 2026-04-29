@@ -1,0 +1,147 @@
+<!-- ================================================
+     FORMULARIO RSVP - EventDay
+     Pegá este código en un bloque HTML de WordPress
+     Cambiá los valores marcados con *** antes de usar
+     ================================================ -->
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Jost:wght@300;400;500&display=swap');
+.ed-wrap{font-family:'Jost',sans-serif;max-width:480px;margin:0 auto;padding:1rem}
+.ed-box{background:#fdfaf9;border:1px solid #ddd0cc;border-radius:16px;padding:2.5rem 2rem}
+.ed-icon{text-align:center;margin-bottom:1.5rem}
+.ed-icon img{width:48px;height:48px;object-fit:contain}
+.ed-title{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;text-align:center;color:#3d2b2b;margin-bottom:0.3rem}
+.ed-sub{font-size:13px;color:#9c7e7e;text-align:center;margin-bottom:2rem;font-weight:300}
+.ed-field{margin-bottom:1.4rem}
+.ed-field label{display:block;font-size:12px;font-weight:400;letter-spacing:.06em;text-transform:uppercase;color:#9c7e7e;margin-bottom:6px}
+.ed-req{color:#c9a09a;margin-left:2px}
+.ed-field input,.ed-field select{width:100%;padding:11px 14px;border:1px solid #ddd0cc;border-radius:8px;background:#f8f2f1;font-family:'Jost',sans-serif;font-size:14px;color:#3d2b2b;outline:none;box-sizing:border-box;appearance:none;-webkit-appearance:none}
+.ed-field input:focus,.ed-field select:focus{border-color:#c9a09a;background:#fdfaf9}
+.ed-select-wrap{position:relative}
+.ed-select-wrap::after{content:'';position:absolute;right:14px;top:50%;transform:translateY(-50%);width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:5px solid #c9a09a;pointer-events:none}
+.ed-radios{display:flex;gap:12px;margin-top:4px}
+.ed-radio{display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;color:#3d2b2b;cursor:pointer;padding:9px 18px;border:1px solid #ddd0cc;border-radius:8px;background:#f8f2f1;transition:all .2s;flex:1}
+.ed-radio input{display:none}
+.ed-radio.sel{border-color:#c9a09a;background:#f0e6e4;color:#8c5f5a}
+.ed-btn{width:100%;padding:13px;background:#c9a09a;color:white;border:none;border-radius:40px;font-family:'Jost',sans-serif;font-size:14px;font-weight:400;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;margin-top:.5rem;transition:background .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.ed-btn:hover{background:#8c5f5a}
+.ed-btn:disabled{background:#ddd0cc;cursor:not-allowed}
+.ed-success{display:none;text-align:center;padding:2.5rem 1.5rem}
+.ed-check{width:56px;height:56px;border-radius:50%;background:#f0e6e4;display:flex;align-items:center;justify-content:center;margin:0 auto 1.2rem}
+.ed-success h3{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:300;color:#3d2b2b;margin-bottom:.4rem}
+.ed-success p{font-size:14px;color:#9c7e7e}
+</style>
+
+<div class="ed-wrap">
+  <div class="ed-box">
+    <div class="ed-icon">
+      <!-- *** Reemplazá con la URL de tu GIF *** -->
+      <img src="https://eventday.ar/boda/wp-content/uploads/2026/04/RSVP-1.gif" alt="RSVP" />
+    </div>
+    <!-- *** Cambiá el título y la fecha *** -->
+    <h2 class="ed-title">Confirmá tu asistencia</h2>
+    <p class="ed-sub">Antes del 15 de octubre · Valentina & Marcos</p>
+
+    <div id="ed-form">
+      <div class="ed-field">
+        <label>Tu nombre completo <span class="ed-req">*</span></label>
+        <input type="text" id="ed-nombre" placeholder="Ingresá tu nombre" />
+      </div>
+
+      <div class="ed-field">
+        <label>¿Asistirás? <span class="ed-req">*</span></label>
+        <div class="ed-radios">
+          <label class="ed-radio" id="ed-opt-si" onclick="edRadio('si')">
+            <input type="radio" name="ed-asiste" value="si" /> Sí, asistiré
+          </label>
+          <label class="ed-radio" id="ed-opt-no" onclick="edRadio('no')">
+            <input type="radio" name="ed-asiste" value="no" /> No podré asistir
+          </label>
+        </div>
+      </div>
+
+      <div class="ed-field">
+        <label>Tipo de alimentación</label>
+        <div class="ed-select-wrap">
+          <select id="ed-menu">
+            <option value="normal">Alimentación normal</option>
+            <option value="vegetariano">Vegetariano</option>
+            <option value="vegano">Vegano</option>
+            <option value="celiaco">Celíaco</option>
+            <option value="otro">Otro</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="ed-field">
+        <label>Acompañante/s — nombre/s</label>
+        <input type="text" id="ed-acomp" placeholder="Si venís acompañado/a, indicá su/s nombre/s" />
+      </div>
+
+      <div class="ed-field">
+        <label>¿Querés recomendar una canción?</label>
+        <input type="text" id="ed-cancion" placeholder="Nombre de la canción y artista" />
+      </div>
+
+      <button class="ed-btn" id="ed-btn" onclick="edEnviar()">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M13 3L6 10.5L3 7.5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Enviar confirmación
+      </button>
+    </div>
+
+    <div class="ed-success" id="ed-success">
+      <div class="ed-check">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="#c9a09a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <h3>¡Gracias por confirmar!</h3>
+      <p>Tu respuesta fue recibida.<br>Te esperamos con mucho amor
+        <svg style="width:16px;height:16px;vertical-align:middle;margin-left:3px" viewBox="0 0 16 16" fill="none"><path d="M8 13.5C8 13.5 1.5 9 1.5 4.8C1.5 3.1 2.8 1.8 4.5 1.8C5.6 1.8 6.6 2.4 7.2 3.3L8 4.4L8.8 3.3C9.4 2.4 10.4 1.8 11.5 1.8C13.2 1.8 14.5 3.1 14.5 4.8C14.5 9 8 13.5 8 13.5Z" stroke="#7a5040" stroke-width="1.2" stroke-linejoin="round"/></svg>
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+function edRadio(val) {
+  document.querySelectorAll('.ed-radio').forEach(o => o.classList.remove('sel'));
+  document.getElementById('ed-opt-' + val).classList.add('sel');
+  document.querySelector(`input[value="${val}"]`).checked = true;
+}
+
+async function edEnviar() {
+  const nombre = document.getElementById('ed-nombre').value.trim();
+  const asisteEl = document.querySelector('input[name="ed-asiste"]:checked');
+  if (!nombre || !asisteEl) { alert('Por favor completá tu nombre e indicá si asistirás'); return; }
+
+  const btn = document.getElementById('ed-btn');
+  btn.disabled = true;
+  btn.textContent = 'Enviando...';
+
+  try {
+    const res = await fetch('*** URL DE TU API EN VERCEL ***/api/confirmar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nombre,
+        asiste: asisteEl.value,
+        menu: document.getElementById('ed-menu').value,
+        acompaniantes: document.getElementById('ed-acomp').value,
+        cancion: document.getElementById('ed-cancion').value,
+        evento: '*** NOMBRE DEL EVENTO ***',         // ej: boda-valentina-marcos
+        email_cliente: '*** EMAIL DE LA CLIENTA ***', // ej: novia@gmail.com
+      })
+    });
+
+    if (res.ok) {
+      document.getElementById('ed-form').style.display = 'none';
+      document.getElementById('ed-success').style.display = 'block';
+    } else {
+      throw new Error('Error del servidor');
+    }
+  } catch(e) {
+    alert('Hubo un error al enviar. Intentá de nuevo.');
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M13 3L6 10.5L3 7.5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Enviar confirmación';
+  }
+}
+</script>
