@@ -6,40 +6,35 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Método no permitido' });
 
-  let nombre, asiste, menu, acompaniantes, cancion, evento, email_cliente;
   const body = req.body;
 
-  if (body.fields && Array.isArray(body.fields)) {
-    const get = (ids) => {
-      for (const id of ids) {
-        const f = body.fields.find(f => f.id === id || (f.title && f.title.toLowerCase().includes(id)));
-        if (f && f.value) return f.value;
+  // Elementor manda los campos con el nombre del label, con guiones bajos y acentos
+  // Buscamos el valor recorriendo todas las keys
+  const findField = (keys) => {
+    for (const key of Object.keys(body)) {
+      const keyNorm = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+      for (const search of keys) {
+        if (keyNorm.includes(search)) return body[key];
       }
-      return '';
-    };
-    nombre = get(['nombre', 'name', 'nombre-completo', 'tu-nombre']);
-    asiste = get(['asiste', 'asistiras', 'asistir', 'radio']);
-    menu = get(['menu', 'alimentacion', 'dato', 'relevante', 'dieta']);
-    acompaniantes = get(['acompaniante', 'acompaniantes', 'acompa']);
-    cancion = get(['cancion', 'musica', 'tema']);
-    evento = get(['evento']) || body.evento || 'sin-evento';
-    email_cliente = get(['email_cliente', 'email-cliente']) || body.email_cliente || '';
-  } else {
-    nombre = body.nombre;
-    asiste = body.asiste;
-    menu = body.menu;
-    acompaniantes = body.acompaniantes;
-    cancion = body.cancion;
-    evento = body.evento || 'sin-evento';
-    email_cliente = body.email_cliente || '';
+    }
+    return '';
+  };
+
+  const nombre = findField(['nombre', 'name']) || body['Tu_nombre_completo'] || body.nombre || '';
+  const asisteRaw = findField(['asistir', 'asistas', 'asistir']) || body['¿Asistirás?'] || body.asiste || '';
+  const menu = findField(['dato', 'aliment', 'dieta', 'vegetar', 'menu']) || body.menu || 'normal';
+  const acompaniantes = findField(['acomp']) || body.acompaniantes || '';
+  const cancion = findField(['cancion', 'canci', 'musica', 'tema', 'song']) || body.cancion || '';
+  const evento = body.nombre_del_formulario || body.evento || 'sin-evento';
+  const email_cliente = body.email_cliente || '';
+
+  // Normalizar asiste
+  let asiste = 'si';
+  const al = asisteRaw.toLowerCase();
+  if (al.includes('no') || al.includes('lamento') || al.includes('podré') || al.includes('podre') || al.includes('siento')) {
+    asiste = 'no';
   }
 
-  if (!asiste) asiste = 'si';
-  const al = asiste.toLowerCase();
-  if (al.includes('si') || al.includes('sí') || al.includes('alli') || al.includes('allí') || al.includes('estar')) asiste = 'si';
-  else if (al.includes('no') || al.includes('lamento') || al.includes('podr')) asiste = 'no';
-
-  if (!menu) menu = 'normal';
   if (!nombre) return res.status(400).json({ error: 'Falta el nombre' });
 
   try {
