@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -95,10 +96,17 @@
   .badge { font-size: 11px; padding: 3px 10px; border-radius: 20px; letter-spacing: 0.04em; flex-shrink: 0; }
   .badge.si { background: #edf6ed; color: #5a8a5a; }
   .badge.no { background: #f6edec; color: #9a5a5a; }
-  .menu-tag {
-    font-size: 11px; background: var(--rose-lighter); border: 1px solid var(--border);
-    color: var(--text-muted); padding: 2px 7px; border-radius: 10px; margin-left: 6px;
+  .tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+  .tag {
+    font-size: 11px; padding: 3px 9px; border-radius: 20px;
+    font-weight: 400; letter-spacing: 0.03em;
   }
+  .tag-menu { background: #fef3e2; color: #9a6e20; border: 1px solid #f5dfa0; }
+  .tag-veggie { background: #edf6ed; color: #4a7a4a; border: 1px solid #b8ddb8; }
+  .tag-vegan { background: #e8f5e8; color: #3a6a3a; border: 1px solid #a0cda0; }
+  .tag-celiaco { background: #fde8e8; color: #8a3a3a; border: 1px solid #f0b8b8; }
+  .tag-acomp { background: #e8eef8; color: #3a5a8a; border: 1px solid #b0c4e8; }
+  .tag-cancion { background: #f3e8f8; color: #6a3a8a; border: 1px solid #d0b0e8; }
 
   .bottom-bar { display: flex; justify-content: flex-end; margin-top: 1rem; }
   .export-btn {
@@ -217,6 +225,10 @@
   function iniciales(n) { return n.split(' ').slice(0,2).map(p=>p[0]).join('').toUpperCase(); }
   function menuLabel(m) { return {normal:'',vegetariano:'Vegetariano',vegano:'Vegano',celiaco:'Celíaco',otro:'Otro'}[m]||''; }
 
+  function menuClass(m) {
+    return {vegetariano:'tag-veggie',vegano:'tag-vegan',celiaco:'tag-celiaco'}[m] || 'tag-menu';
+  }
+
   function renderLista(datos) {
     const si = todos.filter(c=>c.asiste==='si').length;
     const no = todos.filter(c=>c.asiste==='no').length;
@@ -232,8 +244,12 @@
       <div class="card">
         <div class="card-avatar">${iniciales(c.nombre)}</div>
         <div class="card-info">
-          <div class="card-name">${c.nombre}${menuLabel(c.menu)?`<span class="menu-tag">${menuLabel(c.menu)}</span>`:''}</div>
-          <div class="card-detail">${c.acompaniantes?'Con: '+c.acompaniantes:'Sin acompañante'}${c.cancion?' · 🎵 '+c.cancion:''}</div>
+          <div class="card-name">${c.nombre}</div>
+          <div class="tags">
+            ${menuLabel(c.menu) ? `<span class="tag ${menuClass(c.menu)}">${menuLabel(c.menu)}</span>` : '<span class="tag tag-menu">Menú normal</span>'}
+            ${c.acompaniantes ? `<span class="tag tag-acomp">👥 ${c.acompaniantes}</span>` : ''}
+            ${c.cancion ? `<span class="tag tag-cancion">🎵 ${c.cancion}</span>` : ''}
+          </div>
         </div>
         <span class="badge ${c.asiste}">${c.asiste==='si'?'Confirma':'No asiste'}</span>
       </div>
