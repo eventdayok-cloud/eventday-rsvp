@@ -34,6 +34,8 @@ export default async function handler(req, res) {
 
   if (!nombre) return res.status(400).json({ error: 'Falta el nombre' });
 
+  const menuTextos = { normal: 'Alimentación normal', vegetariano: 'Vegetariano', vegano: 'Vegano', celiaco: 'Celíaco', otro: 'Otro' };
+
   try {
     const supabaseRes = await fetch(
       `${process.env.SUPABASE_URL}/rest/v1/confirmaciones`,
@@ -55,8 +57,37 @@ export default async function handler(req, res) {
     }
 
     if (email_cliente) {
-      const menuTexto = { normal: 'Alimentación normal', vegetariano: 'Vegetariano', vegano: 'Vegano', celiaco: 'Celíaco', otro: 'Otro' }[menu] || menu;
-      const asisteTexto = asiste === 'si' ? '✅ Confirma asistencia' : '❌ No puede asistir';
+      const menuTexto = menuTextos[menu] || menu;
+      const asisteTexto = asiste === 'si' ? 'Confirma asistencia' : 'No asiste';
+      const asisteColor = asiste === 'si' ? '#2e6b2e' : '#8a2a2a';
+      const asisteBg = asiste === 'si' ? '#edf6ed' : '#fde8e8';
+
+      // Armar filas de acompañantes si es formato dinámico
+      let acompHtml = '';
+      if (acompaniantes && acompaniantes.includes('|')) {
+        const acompList = acompaniantes.split(', ').map(a => {
+          const [nombreA, asisteA, menuA] = a.split('|');
+          const asisteATexto = asisteA === 'si' ? 'Confirma asistencia' : 'No asiste';
+          const asisteAColor = asisteA === 'si' ? '#2e6b2e' : '#8a2a2a';
+          const asisteABg = asisteA === 'si' ? '#edf6ed' : '#fde8e8';
+          return `
+            <tr>
+              <td style="padding:12px 16px 12px 0;border-bottom:1px solid #ede5e1;font-size:15px;color:#3d2b2b;vertical-align:top;">${nombreA}</td>
+              <td style="padding:12px 16px 12px 0;border-bottom:1px solid #ede5e1;vertical-align:top;">
+                <span style="background:${asisteABg};color:${asisteAColor};padding:3px 10px;border-radius:20px;font-size:12px;">${asisteATexto}</span>
+              </td>
+              <td style="padding:12px 0 12px 0;border-bottom:1px solid #ede5e1;font-size:14px;color:#9c7e7e;vertical-align:top;">${menuA || 'Alimentación normal'}</td>
+            </tr>`;
+        });
+        acompHtml = `
+          <tr><td colspan="3" style="padding:20px 0 10px;font-size:11px;color:#9c7e7e;text-transform:uppercase;letter-spacing:0.1em;">Acompañantes</td></tr>
+          ${acompList.join('')}`;
+      } else if (acompaniantes) {
+        acompHtml = `
+          <tr>
+            <td colspan="3" style="padding:12px 0;border-bottom:1px solid #ede5e1;font-size:14px;color:#3d2b2b;">👥 ${acompaniantes}</td>
+          </tr>`;
+      }
 
       await fetch('https://api.resend.com/emails', {
         method: 'POST',
@@ -68,52 +99,37 @@ export default async function handler(req, res) {
           html: `
 <!DOCTYPE html>
 <html lang="es">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-</head>
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/></head>
 <body style="margin:0;padding:0;background:#f4ede8;font-family:Georgia,serif;">
   <div style="max-width:520px;margin:0 auto;padding:32px 16px;">
 
-    <!-- HEADER -->
     <div style="text-align:center;margin-bottom:28px;">
       <p style="font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#9c7e7e;margin:0 0 10px;">EventDay · Confirmación de asistencia</p>
       <h1 style="font-size:30px;font-weight:400;margin:0;color:#3d2b2b;font-family:Georgia,serif;">${evento.replace(/-/g,' ').replace(/\b\w/g,l=>l.toUpperCase())}</h1>
     </div>
 
-    <!-- CARD -->
     <div style="background:#fdfaf9;border-radius:14px;padding:28px 24px;margin-bottom:24px;border:1px solid #e8ddd9;">
-
       <p style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#9c7e7e;margin:0 0 18px;">Nueva respuesta recibida</p>
 
-      <!-- TABLA -->
       <table style="width:100%;border-collapse:collapse;">
         <tr>
-          <td style="padding:12px 16px 12px 0;border-bottom:1px solid #ede5e1;font-size:11px;color:#9c7e7e;text-transform:uppercase;letter-spacing:0.08em;white-space:nowrap;vertical-align:top;width:38%;">Nombre</td>
-          <td style="padding:12px 0 12px 16px;border-bottom:1px solid #ede5e1;font-size:15px;color:#3d2b2b;vertical-align:top;">${nombre}</td>
+          <td colspan="3" style="padding:4px 0 12px;font-size:11px;color:#9c7e7e;text-transform:uppercase;letter-spacing:0.1em;border-bottom:1px solid #ede5e1;">Titular</td>
         </tr>
         <tr>
-          <td style="padding:12px 16px 12px 0;border-bottom:1px solid #ede5e1;font-size:11px;color:#9c7e7e;text-transform:uppercase;letter-spacing:0.08em;white-space:nowrap;vertical-align:top;width:38%;">Estado</td>
-          <td style="padding:12px 0 12px 16px;border-bottom:1px solid #ede5e1;font-size:15px;color:#3d2b2b;vertical-align:top;">${asisteTexto}</td>
+          <td style="padding:12px 16px 12px 0;border-bottom:1px solid #ede5e1;font-size:15px;color:#3d2b2b;vertical-align:top;">${nombre}</td>
+          <td style="padding:12px 16px 12px 0;border-bottom:1px solid #ede5e1;vertical-align:top;">
+            <span style="background:${asisteBg};color:${asisteColor};padding:3px 10px;border-radius:20px;font-size:12px;">${asisteTexto}</span>
+          </td>
+          <td style="padding:12px 0 12px 0;border-bottom:1px solid #ede5e1;font-size:14px;color:#9c7e7e;vertical-align:top;">${menuTexto}</td>
         </tr>
-        <tr>
-          <td style="padding:12px 16px 12px 0;border-bottom:1px solid #ede5e1;font-size:11px;color:#9c7e7e;text-transform:uppercase;letter-spacing:0.08em;white-space:nowrap;vertical-align:top;width:38%;">Menú</td>
-          <td style="padding:12px 0 12px 16px;border-bottom:1px solid #ede5e1;font-size:15px;color:#3d2b2b;vertical-align:top;">${menuTexto}</td>
-        </tr>
-        ${acompaniantes ? `
-        <tr>
-          <td style="padding:12px 16px 12px 0;border-bottom:1px solid #ede5e1;font-size:11px;color:#9c7e7e;text-transform:uppercase;letter-spacing:0.08em;white-space:nowrap;vertical-align:top;width:38%;">Acompañantes</td>
-          <td style="padding:12px 0 12px 16px;border-bottom:1px solid #ede5e1;font-size:15px;color:#3d2b2b;vertical-align:top;">${acompaniantes}</td>
-        </tr>` : ''}
+        ${acompHtml}
         ${cancion ? `
         <tr>
-          <td style="padding:12px 16px 12px 0;font-size:11px;color:#9c7e7e;text-transform:uppercase;letter-spacing:0.08em;white-space:nowrap;vertical-align:top;width:38%;">Canción</td>
-          <td style="padding:12px 0 12px 16px;font-size:15px;color:#3d2b2b;vertical-align:top;">🎵 ${cancion}</td>
+          <td colspan="3" style="padding:12px 0 0;font-size:13px;color:#9c7e7e;">🎵 ${cancion}</td>
         </tr>` : ''}
       </table>
     </div>
 
-    <!-- PIE CON LOGO -->
     <div style="text-align:center;padding-top:20px;border-top:1px solid #e0d4cc;">
       <img src="https://eventday.ar/wp-content/uploads/2026/01/Logo.webp" alt="EventDay" style="width:110px;max-width:100%;height:auto;margin-bottom:10px;opacity:0.85;" />
       <p style="font-size:11px;color:#555555;letter-spacing:0.1em;text-transform:uppercase;margin:0;">Invitaciones digitales</p>
