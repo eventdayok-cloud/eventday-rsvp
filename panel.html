@@ -277,6 +277,21 @@ function filtrar(f, btn) {
 
 function iniciales(n) { return n.split(' ').slice(0,2).map(p=>p[0]).join('').toUpperCase(); }
 function menuLabel(m) { return {normal:'',vegetariano:'Vegetariano',vegano:'Vegano',celiaco:'Celíaco',otro:'Otro'}[m]||''; }
+function renderAcomp(acomp) {
+  if (!acomp) return '';
+  if (acomp.includes('|')) {
+    return acomp.split(', ').map(a => {
+      const parts = a.split('|');
+      const nombre = parts[0];
+      const asiste = parts[1];
+      const menu = parts[2];
+      const asisteTexto = asiste === 'si' ? '✅' : '❌';
+      const menuTexto = menu && menu !== 'Alimentación normal' && menu !== 'Normal' ? ' — ' + menu : '';
+      return '<span class="tag tag-acomp" style="display:block;margin-bottom:3px;">👥 ' + nombre + menuTexto + ' ' + asisteTexto + '</span>';
+    }).join('');
+  }
+  return '<span class="tag tag-acomp">👥 ' + acomp + '</span>';
+}
 function menuClass(m) { return {vegetariano:'tag-veggie',vegano:'tag-vegan',celiaco:'tag-celiaco'}[m]||'tag-menu'; }
 
 function renderLista(datos) {
@@ -295,7 +310,7 @@ function renderLista(datos) {
         <div class="card-name">${c.nombre}</div>
         <div class="tags">
           ${menuLabel(c.menu) ? `<span class="tag ${menuClass(c.menu)}">${menuLabel(c.menu)}</span>` : '<span class="tag tag-menu">Menú normal</span>'}
-          ${c.acompaniantes ? `<span class="tag tag-acomp">👥 ${c.acompaniantes}</span>` : ''}
+          ${renderAcomp(c.acompaniantes)}
           ${c.cancion ? `<span class="tag tag-cancion">🎵 ${c.cancion}</span>` : ''}
         </div>
       </div>
