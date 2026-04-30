@@ -1,150 +1,344 @@
-export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Método no permitido' });
-
-  const body = req.body;
-
-  const findField = (keys) => {
-    for (const key of Object.keys(body)) {
-      const keyNorm = key.toLowerCase().replace(/[^a-z0-9]/g, '');
-      for (const search of keys) {
-        if (keyNorm.includes(search)) return body[key];
-      }
-    }
-    return '';
-  };
-
-  const nombre = findField(['nombre', 'name']) || body['Tu_nombre_completo'] || body.nombre || '';
-  const asisteRaw = findField(['asistir', 'asistas']) || body['¿Asistirás?'] || body.asiste || '';
-  const menu = findField(['dato', 'aliment', 'dieta', 'vegetar', 'menu']) || body.menu || 'normal';
-  const acompaniantes = findField(['acomp']) || body.acompaniantes || '';
-  const cancion = findField(['cancion', 'canci', 'musica', 'tema', 'song']) || body.cancion || '';
-  const evento = body.nombre_del_formulario || body.evento || 'sin-evento';
-  const email_cliente = body.email_cliente || '';
-
-  let asiste = 'si';
-  const al = asisteRaw.toLowerCase();
-  if (al.includes('no') || al.includes('lamento') || al.includes('podre') || al.includes('siento')) {
-    asiste = 'no';
-  }
-
-  if (!nombre) return res.status(400).json({ error: 'Falta el nombre' });
-
-  const menuTextos = { normal: 'Alimentación normal', vegetariano: 'Vegetariano', vegano: 'Vegano', celiaco: 'Celíaco', otro: 'Otro' };
-
-  try {
-    const supabaseRes = await fetch(
-      `${process.env.SUPABASE_URL}/rest/v1/confirmaciones`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': process.env.SUPABASE_KEY,
-          'Authorization': `Bearer ${process.env.SUPABASE_KEY}`,
-          'Prefer': 'return=minimal',
-        },
-        body: JSON.stringify({ nombre, asiste, menu, acompaniantes, cancion, evento }),
-      }
-    );
-
-    if (!supabaseRes.ok) {
-      const err = await supabaseRes.text();
-      throw new Error('Error Supabase: ' + err);
-    }
-
-    if (email_cliente) {
-      const menuTexto = menuTextos[menu] || menu;
-      const asisteTexto = asiste === 'si' ? 'Confirma asistencia' : 'No asiste';
-      const asisteColor = asiste === 'si' ? '#2e6b2e' : '#8a2a2a';
-      const asisteBg = asiste === 'si' ? '#edf6ed' : '#fde8e8';
-
-      // Armar filas de acompañantes si es formato dinámico
-      let acompHtml = '';
-      if (acompaniantes && acompaniantes.includes('|')) {
-        const acompList = acompaniantes.split(', ').map(a => {
-          const [nombreA, asisteA, menuA] = a.split('|');
-          const asisteATexto = asisteA === 'si' ? 'Confirma asistencia' : 'No asiste';
-          const asisteAColor = asisteA === 'si' ? '#2e6b2e' : '#8a2a2a';
-          const asisteABg = asisteA === 'si' ? '#edf6ed' : '#fde8e8';
-          return `
-            <tr>
-              <td style="padding:12px 16px 12px 0;border-bottom:1px solid #ede5e1;font-size:15px;color:#3d2b2b;vertical-align:top;">${nombreA}</td>
-              <td style="padding:12px 16px 12px 0;border-bottom:1px solid #ede5e1;vertical-align:top;">
-                <span style="background:${asisteABg};color:${asisteAColor};padding:3px 10px;border-radius:20px;font-size:12px;">${asisteATexto}</span>
-              </td>
-              <td style="padding:12px 0 12px 0;border-bottom:1px solid #ede5e1;font-size:14px;color:#9c7e7e;vertical-align:top;">${menuA || 'Alimentación normal'}</td>
-            </tr>`;
-        });
-        acompHtml = `
-          <tr><td colspan="3" style="padding:20px 0 10px;font-size:11px;color:#9c7e7e;text-transform:uppercase;letter-spacing:0.1em;">Acompañantes</td></tr>
-          ${acompList.join('')}`;
-      } else if (acompaniantes) {
-        acompHtml = `
-          <tr>
-            <td colspan="3" style="padding:12px 0;border-bottom:1px solid #ede5e1;font-size:14px;color:#3d2b2b;">👥 ${acompaniantes}</td>
-          </tr>`;
-      }
-
-      await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.RESEND_KEY}` },
-        body: JSON.stringify({
-          from: 'EventDay <bodas@eventday.ar>',
-          to: email_cliente,
-          subject: `Nueva confirmación — ${nombre}`,
-          html: `
 <!DOCTYPE html>
 <html lang="es">
-<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/></head>
-<body style="margin:0;padding:0;background:#f4ede8;font-family:Georgia,serif;">
-  <div style="max-width:520px;margin:0 auto;padding:32px 16px;">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Panel EventDay</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Jost:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --rose: #c9a09a; --rose-light: #f0e6e4; --rose-lighter: #f8f2f1;
+    --rose-dark: #8c5f5a; --text: #3d2b2b; --text-muted: #9c7e7e;
+    --border: #ddd0cc; --white: #fdfaf9; --bg: #f4ede8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Jost', sans-serif; background: var(--bg); min-height: 100vh; color: var(--text); }
 
-    <div style="text-align:center;margin-bottom:28px;">
-      <p style="font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#9c7e7e;margin:0 0 10px;">EventDay · Confirmación de asistencia</p>
-      <h1 style="font-size:30px;font-weight:400;margin:0;color:#3d2b2b;font-family:Georgia,serif;">${evento.replace(/-/g,' ').replace(/\b\w/g,l=>l.toUpperCase())}</h1>
-    </div>
+  /* LOGIN ADMIN */
+  .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+  .login-box { background: var(--white); border: 1px solid var(--border); border-radius: 16px; padding: 2.5rem 2rem; width: 100%; max-width: 360px; text-align: center; }
+  .login-box h1 { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 300; margin-bottom: 0.3rem; }
+  .login-box p { font-size: 13px; color: var(--text-muted); margin-bottom: 1.8rem; }
+  .login-box input { width: 100%; padding: 11px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--rose-lighter); font-family: 'Jost', sans-serif; font-size: 14px; color: var(--text); outline: none; margin-bottom: 1rem; }
+  .login-box input:focus { border-color: var(--rose); background: var(--white); }
+  .btn { width: 100%; padding: 12px; background: var(--rose); color: white; border: none; border-radius: 40px; font-family: 'Jost', sans-serif; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; transition: background 0.2s; }
+  .btn:hover { background: var(--rose-dark); }
+  .error-msg { font-size: 13px; color: #b96e6e; margin-top: 0.8rem; }
 
-    <div style="background:#fdfaf9;border-radius:14px;padding:28px 24px;margin-bottom:24px;border:1px solid #e8ddd9;">
-      <p style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#9c7e7e;margin:0 0 18px;">Nueva respuesta recibida</p>
+  /* PANEL */
+  .panel-wrap { display: none; max-width: 760px; margin: 0 auto; padding: 2rem 1rem; }
+  .panel-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.8rem; flex-wrap: wrap; gap: 1rem; }
+  .panel-top h1 { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 300; }
+  .panel-top p { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+  .logout-btn { font-size: 12px; padding: 6px 14px; border: 1px solid var(--border); border-radius: 20px; background: none; color: var(--text-muted); cursor: pointer; letter-spacing: 0.05em; }
+  .logout-btn:hover { border-color: var(--rose); color: var(--rose-dark); }
 
-      <table style="width:100%;border-collapse:collapse;">
-        <tr>
-          <td colspan="3" style="padding:4px 0 12px;font-size:11px;color:#9c7e7e;text-transform:uppercase;letter-spacing:0.1em;border-bottom:1px solid #ede5e1;">Titular</td>
-        </tr>
-        <tr>
-          <td style="padding:12px 16px 12px 0;border-bottom:1px solid #ede5e1;font-size:15px;color:#3d2b2b;vertical-align:top;">${nombre}</td>
-          <td style="padding:12px 16px 12px 0;border-bottom:1px solid #ede5e1;vertical-align:top;">
-            <span style="background:${asisteBg};color:${asisteColor};padding:3px 10px;border-radius:20px;font-size:12px;">${asisteTexto}</span>
-          </td>
-          <td style="padding:12px 0 12px 0;border-bottom:1px solid #ede5e1;font-size:14px;color:#9c7e7e;vertical-align:top;">${menuTexto}</td>
-        </tr>
-        ${acompHtml}
-        ${cancion ? `
-        <tr>
-          <td colspan="3" style="padding:12px 0 0;font-size:13px;color:#9c7e7e;">🎵 ${cancion}</td>
-        </tr>` : ''}
-      </table>
-    </div>
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 1.5rem; }
+  .stat { background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; text-align: center; }
+  .stat.green { background: #edf6ed; border-color: #c8e6c8; }
+  .stat.green .num { color: #2e6b2e; }
+  .stat.green .lbl { color: #3d7a3d; }
+  .stat.red { background: #fde8e8; border-color: #f0c4c4; }
+  .stat.red .num { color: #8a2a2a; }
+  .stat.red .lbl { color: #8a2a2a; }
+  .stat.total { background: #f5f0e8; border-color: #e0d4c0; }
+  .stat.total .num { color: #5a4a2a; }
+  .stat.total .lbl { color: #5a4a2a; }
+  .stat .num { font-family: 'Cormorant Garamond', serif; font-size: 36px; font-weight: 300; line-height: 1; margin-bottom: 4px; }
+  .stat .lbl { font-size: 11px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-muted); }
+  
+  
 
-    <div style="text-align:center;padding-top:20px;border-top:1px solid #e0d4cc;">
-      <img src="https://eventday.ar/wp-content/uploads/2026/01/Logo.webp" alt="EventDay" style="width:110px;max-width:100%;height:auto;margin-bottom:10px;opacity:0.85;" />
-      <p style="font-size:11px;color:#555555;letter-spacing:0.1em;text-transform:uppercase;margin:0;">Invitaciones digitales</p>
-    </div>
+  .filters { display: flex; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .filter-btn { font-family: 'Jost', sans-serif; font-size: 12px; padding: 5px 14px; border: 1px solid var(--border); border-radius: 20px; background: none; color: var(--text-muted); cursor: pointer; transition: all 0.2s; letter-spacing: 0.04em; }
+  .filter-btn.active { background: var(--rose-light); border-color: var(--rose); color: var(--rose-dark); }
 
+  .list { display: flex; flex-direction: column; gap: 8px; }
+  .card { background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; gap: 14px; }
+  .card-avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--rose-light); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 500; color: var(--rose-dark); flex-shrink: 0; }
+  .card-info { flex: 1; min-width: 0; }
+  .card-name { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 5px; }
+  .tag { font-size: 11px; padding: 3px 9px; border-radius: 20px; }
+  .tag-menu { background: #fef3e2; color: #9a6e20; border: 1px solid #f5dfa0; }
+  .tag-veggie { background: #edf6ed; color: #4a7a4a; border: 1px solid #b8ddb8; }
+  .tag-vegan { background: #e8f5e8; color: #3a6a3a; border: 1px solid #a0cda0; }
+  .tag-celiaco { background: #fde8e8; color: #8a3a3a; border: 1px solid #f0b8b8; }
+  .tag-acomp { background: #e8eef8; color: #3a5a8a; border: 1px solid #b0c4e8; }
+  .tag-cancion { background: #f3e8f8; color: #6a3a8a; border: 1px solid #d0b0e8; }
+  .badge { font-size: 11px; padding: 3px 10px; border-radius: 20px; letter-spacing: 0.04em; flex-shrink: 0; }
+  .badge.si { background: #edf6ed; color: #5a8a5a; }
+  .badge.no { background: #f6edec; color: #9a5a5a; }
+  .bottom-bar { display: flex; justify-content: flex-end; margin-top: 1rem; }
+  .export-btn { font-family: 'Jost', sans-serif; font-size: 12px; padding: 8px 16px; border: 1px solid var(--border); border-radius: 20px; background: none; color: var(--text-muted); cursor: pointer; letter-spacing: 0.05em; }
+  .export-btn:hover { border-color: var(--rose); color: var(--rose-dark); }
+  .empty { text-align: center; padding: 3rem 1rem; color: var(--text-muted); font-size: 14px; }
+  .loading { text-align: center; padding: 2rem; color: var(--text-muted); font-size: 13px; }
+
+  /* ADMIN - lista de eventos */
+  .admin-wrap { display: none; max-width: 760px; margin: 0 auto; padding: 2rem 1rem; }
+  .admin-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.8rem; }
+  .admin-top h1 { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 300; }
+  .eventos-list { display: flex; flex-direction: column; gap: 10px; }
+  .evento-card { background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .evento-nombre { font-size: 15px; font-weight: 500; color: var(--text); }
+  .evento-link { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+  .copiar-btn { font-size: 12px; padding: 6px 14px; border: 1px solid var(--border); border-radius: 20px; background: none; color: var(--text-muted); cursor: pointer; white-space: nowrap; }
+  .copiar-btn:hover { border-color: var(--rose); color: var(--rose-dark); }
+  .copiar-btn.copiado { border-color: #6a9e6a; color: #6a9e6a; }
+
+  @media (max-width: 480px) {
+    .stat .num { font-size: 28px; }
+    .panel-top h1 { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="login-wrap">
+  <div class="login-box">
+    <h1>EventDay</h1>
+    <p>Panel de confirmaciones</p>
+    <input type="password" id="pass-input" placeholder="Contraseña" onkeydown="if(event.key==='Enter')login()" />
+    <button class="btn" onclick="login()">Ingresar</button>
+    <p class="error-msg" id="error-msg" style="display:none">Contraseña incorrecta</p>
   </div>
-</body>
-</html>`,
-        }),
-      });
-    }
+</div>
 
-    return res.status(200).json({ ok: true });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: error.message });
+<!-- ADMIN (ves todos tus eventos) -->
+<div class="admin-wrap" id="admin-wrap">
+  <div style="text-align:center;margin-bottom:1.5rem;padding-bottom:1.2rem;border-bottom:1px solid var(--border);">
+    <img src="https://eventday.ar/wp-content/uploads/2026/01/Logo.webp" alt="EventDay" style="width:100px;max-width:100%;height:auto;opacity:0.85;" />
+  </div>
+  <div class="admin-top">
+    <h1>Mis eventos</h1>
+    <button class="logout-btn" onclick="logout()">Cerrar sesión</button>
+  </div>
+  <div class="eventos-list" id="eventos-list">
+    <div class="loading">Cargando eventos...</div>
+  </div>
+</div>
+
+<!-- PANEL (la clienta ve su evento) -->
+<div class="panel-wrap" id="panel-wrap">
+  <div style="text-align:center;margin-bottom:1.5rem;padding-bottom:1.2rem;border-bottom:1px solid var(--border);">
+    <img src="https://eventday.ar/wp-content/uploads/2026/01/Logo.webp" alt="EventDay" style="width:100px;max-width:100%;height:auto;opacity:0.85;" />
+  </div>
+  <div class="panel-top">
+    <div>
+      <h1 id="panel-titulo">Mis confirmaciones</h1>
+      <p id="panel-sub"></p>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat green"><div class="num" id="count-si">—</div><div class="lbl">Confirman</div></div>
+    <div class="stat red"><div class="num" id="count-no">—</div><div class="lbl">No asisten</div></div>
+    <div class="stat total"><div class="num" id="count-total">—</div><div class="lbl">Total</div></div>
+  </div>
+
+  <div class="filters">
+    <button class="filter-btn active" onclick="filtrar('todos',this)">Todos</button>
+    <button class="filter-btn" onclick="filtrar('si',this)">Confirman</button>
+    <button class="filter-btn" onclick="filtrar('no',this)">No asisten</button>
+  </div>
+
+  <div class="list" id="lista"><div class="empty">Cargando...</div></div>
+
+  <div class="bottom-bar">
+    <button class="export-btn" onclick="exportar()">Exportar Excel ↓</button>
+  </div>
+</div>
+
+<script>
+const PASS_ADMIN = 'eventday2024';
+const SUPABASE_URL = 'https://utkndpqbwytqzsparray.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_7MK4pi08Rb7i3OCL1adAlQ_W9iOdZru';
+
+let todos = [];
+let filtroActivo = 'todos';
+let eventoActual = '';
+
+// Detectar si hay evento en la URL: /panel/nombre-evento
+function getEventoDeURL() {
+  const path = window.location.pathname;
+  const match = path.match(/\/panel\/(.+)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+window.onload = function() {
+  const evento = getEventoDeURL();
+  if (evento) {
+    // Modo cliente: mostrar directo el panel del evento
+    eventoActual = evento;
+    document.getElementById('login-wrap').style.display = 'none';
+    document.getElementById('panel-wrap').style.display = 'block';
+    document.getElementById('panel-titulo').textContent = evento.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    document.getElementById('panel-sub').textContent = 'Confirmaciones en tiempo real';
+    cargarDatos(evento);
+  }
+  // Si no hay evento en URL, mostrar login de admin
+};
+
+function login() {
+  const val = document.getElementById('pass-input').value;
+  if (val === PASS_ADMIN) {
+    document.getElementById('login-wrap').style.display = 'none';
+    document.getElementById('admin-wrap').style.display = 'block';
+    document.getElementById('error-msg').style.display = 'none';
+    cargarEventos();
+  } else {
+    document.getElementById('error-msg').style.display = 'block';
   }
 }
+
+function logout() {
+  document.getElementById('login-wrap').style.display = 'flex';
+  document.getElementById('admin-wrap').style.display = 'none';
+  document.getElementById('panel-wrap').style.display = 'none';
+  document.getElementById('pass-input').value = '';
+}
+
+async function cargarEventos() {
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/confirmaciones?select=evento&order=created_at.desc`,
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+    );
+    const data = await res.json();
+    // Obtener eventos únicos
+    const eventos = [...new Set(data.map(d => d.evento))].filter(Boolean);
+    
+    if (!eventos.length) {
+      document.getElementById('eventos-list').innerHTML = '<div class="empty">No hay eventos todavía</div>';
+      return;
+    }
+
+    document.getElementById('eventos-list').innerHTML = eventos.map(ev => {
+      const nombre = ev.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+      const link = `${window.location.origin}/panel/${ev}`;
+      return `
+        <div class="evento-card">
+          <div>
+            <div class="evento-nombre">${nombre}</div>
+            <div class="evento-link">${link}</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="copiar-btn" onclick="copiarLink('${link}', this)">Copiar link</button>
+            <button class="copiar-btn" onclick="verEvento('${ev}')">Ver panel</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch(e) {
+    document.getElementById('eventos-list').innerHTML = '<div class="empty">Error al cargar eventos</div>';
+  }
+}
+
+function copiarLink(link, btn) {
+  navigator.clipboard.writeText(link);
+  btn.textContent = '¡Copiado!';
+  btn.classList.add('copiado');
+  setTimeout(() => { btn.textContent = 'Copiar link'; btn.classList.remove('copiado'); }, 2000);
+}
+
+function verEvento(evento) {
+  eventoActual = evento;
+  document.getElementById('admin-wrap').style.display = 'none';
+  document.getElementById('panel-wrap').style.display = 'block';
+  document.getElementById('panel-titulo').textContent = evento.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  document.getElementById('panel-sub').textContent = 'Confirmaciones en tiempo real';
+  cargarDatos(evento);
+}
+
+async function cargarDatos(evento) {
+  document.getElementById('lista').innerHTML = '<div class="loading">Cargando...</div>';
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/confirmaciones?evento=eq.${encodeURIComponent(evento)}&order=created_at.desc`,
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+    );
+    todos = await res.json();
+    filtroActivo = 'todos';
+    document.querySelectorAll('.filter-btn').forEach((b,i) => b.classList.toggle('active', i===0));
+    renderLista(todos);
+  } catch(e) {
+    document.getElementById('lista').innerHTML = '<div class="empty">Error al cargar datos</div>';
+  }
+}
+
+function filtrar(f, btn) {
+  filtroActivo = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderLista(f === 'todos' ? todos : todos.filter(c => c.asiste === f));
+}
+
+function iniciales(n) { return n.split(' ').slice(0,2).map(p=>p[0]).join('').toUpperCase(); }
+function menuLabel(m) { return {normal:'',vegetariano:'Vegetariano',vegano:'Vegano',celiaco:'Celíaco',otro:'Otro'}[m]||''; }
+function renderAcomp(acomp) {
+  if (!acomp) return '';
+  if (acomp.includes('|')) {
+    return acomp.split(', ').map(a => {
+      const parts = a.split('|');
+      const nombre = parts[0];
+      const asiste = parts[1];
+      const menu = parts[2];
+      const asisteTexto = asiste === 'si' ? '✅' : '❌';
+      const menuTexto = menu && menu !== 'Alimentación normal' && menu !== 'Normal' ? ' — ' + menu : '';
+      const asisteLabel = asiste === 'si' ? 'Asiste' : 'No asiste'; return '<span class="tag tag-acomp" style="display:block;margin-bottom:3px;">👥 ' + nombre + menuTexto + ' — ' + asisteLabel + '</span>';
+    }).join('');
+  }
+  return '<span class="tag tag-acomp">👥 ' + acomp + '</span>';
+}
+function menuClass(m) { return {vegetariano:'tag-veggie',vegano:'tag-vegan',celiaco:'tag-celiaco'}[m]||'tag-menu'; }
+
+function renderLista(datos) {
+  let totalSi = 0, totalNo = 0;
+  todos.forEach(c => {
+    if (c.asiste === 'si') totalSi++; else totalNo++;
+    if (c.acompaniantes && c.acompaniantes.includes('|')) {
+      c.acompaniantes.split(', ').forEach(a => {
+        const parts = a.split('|');
+        if (parts[1] === 'si') totalSi++; else totalNo++;
+      });
+    }
+  });
+  document.getElementById('count-si').textContent = totalSi;
+  document.getElementById('count-no').textContent = totalNo;
+  document.getElementById('count-total').textContent = totalSi + totalNo;
+
+  if (!datos.length) {
+    document.getElementById('lista').innerHTML = '<div class="empty">Sin confirmaciones aún</div>';
+    return;
+  }
+  document.getElementById('lista').innerHTML = datos.map(c => `
+    <div class="card">
+      <div class="card-avatar">${iniciales(c.nombre)}</div>
+      <div class="card-info">
+        <div class="card-name">${c.nombre}</div>
+        <div class="tags">
+          ${menuLabel(c.menu) ? `<span class="tag ${menuClass(c.menu)}">${menuLabel(c.menu)}</span>` : '<span class="tag tag-menu">Menú normal</span>'}
+          ${renderAcomp(c.acompaniantes)}
+          ${c.cancion ? `<span class="tag tag-cancion">🎵 ${c.cancion}</span>` : ''}
+        </div>
+      </div>
+      <span class="badge ${c.asiste}">${c.asiste==='si'?'Confirma':'No asiste'}</span>
+    </div>
+  `).join('');
+}
+
+function exportar() {
+  if (!todos.length) return;
+  const rows = [['Nombre','Asiste','Menú','Acompañantes','Canción','Fecha']];
+  todos.forEach(c => rows.push([c.nombre, c.asiste==='si'?'Sí':'No', menuLabel(c.menu)||'Normal', c.acompaniantes||'', c.cancion||'', c.created_at?.slice(0,10)||'']));
+  const csv = rows.map(r => r.map(v=>`"${v}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,\uFEFF' + encodeURIComponent(csv);
+  a.download = `confirmaciones-${eventoActual}.csv`;
+  a.click();
+}
+</script>
+</body>
+</html>
