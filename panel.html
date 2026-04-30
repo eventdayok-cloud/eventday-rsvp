@@ -35,10 +35,19 @@
 
   .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 1.5rem; }
   .stat { background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; text-align: center; }
+  .stat.green { background: #edf6ed; border-color: #c8e6c8; }
+  .stat.green .num { color: #2e6b2e; }
+  .stat.green .lbl { color: #3d7a3d; }
+  .stat.red { background: #fde8e8; border-color: #f0c4c4; }
+  .stat.red .num { color: #8a2a2a; }
+  .stat.red .lbl { color: #8a2a2a; }
+  .stat.total { background: #f5f0e8; border-color: #e0d4c0; }
+  .stat.total .num { color: #5a4a2a; }
+  .stat.total .lbl { color: #5a4a2a; }
   .stat .num { font-family: 'Cormorant Garamond', serif; font-size: 36px; font-weight: 300; line-height: 1; margin-bottom: 4px; }
   .stat .lbl { font-size: 11px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-muted); }
-  .stat.green .num { color: #6a9e6a; }
-  .stat.red .num { color: #b96e6e; }
+  
+  
 
   .filters { display: flex; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap; }
   .filter-btn { font-family: 'Jost', sans-serif; font-size: 12px; padding: 5px 14px; border: 1px solid var(--border); border-radius: 20px; background: none; color: var(--text-muted); cursor: pointer; transition: all 0.2s; letter-spacing: 0.04em; }
@@ -99,6 +108,9 @@
 
 <!-- ADMIN (ves todos tus eventos) -->
 <div class="admin-wrap" id="admin-wrap">
+  <div style="text-align:center;margin-bottom:1.5rem;padding-bottom:1.2rem;border-bottom:1px solid var(--border);">
+    <img src="https://eventday.ar/wp-content/uploads/2026/01/Logo.webp" alt="EventDay" style="width:100px;max-width:100%;height:auto;opacity:0.85;" />
+  </div>
   <div class="admin-top">
     <h1>Mis eventos</h1>
     <button class="logout-btn" onclick="logout()">Cerrar sesión</button>
@@ -110,6 +122,9 @@
 
 <!-- PANEL (la clienta ve su evento) -->
 <div class="panel-wrap" id="panel-wrap">
+  <div style="text-align:center;margin-bottom:1.5rem;padding-bottom:1.2rem;border-bottom:1px solid var(--border);">
+    <img src="https://eventday.ar/wp-content/uploads/2026/01/Logo.webp" alt="EventDay" style="width:100px;max-width:100%;height:auto;opacity:0.85;" />
+  </div>
   <div class="panel-top">
     <div>
       <h1 id="panel-titulo">Mis confirmaciones</h1>
@@ -120,7 +135,7 @@
   <div class="stats">
     <div class="stat green"><div class="num" id="count-si">—</div><div class="lbl">Confirman</div></div>
     <div class="stat red"><div class="num" id="count-no">—</div><div class="lbl">No asisten</div></div>
-    <div class="stat"><div class="num" id="count-total">—</div><div class="lbl">Total</div></div>
+    <div class="stat total"><div class="num" id="count-total">—</div><div class="lbl">Total</div></div>
   </div>
 
   <div class="filters">
