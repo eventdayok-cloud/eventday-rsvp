@@ -272,7 +272,27 @@ function filtrar(f, btn) {
   filtroActivo = f;
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  renderLista(f === 'todos' ? todos : todos.filter(c => c.asiste === f));
+  if (f === 'todos') {
+    renderLista(todos);
+  } else if (f === 'si') {
+    // Confirman: titulares que asisten O que tienen al menos un acompañante que asiste
+    renderLista(todos.filter(c => {
+      if (c.asiste === 'si') return true;
+      if (c.acompaniantes && c.acompaniantes.includes('|')) {
+        return c.acompaniantes.split(', ').some(a => a.split('|')[1] === 'si');
+      }
+      return false;
+    }));
+  } else {
+    // No asisten: titulares que no asisten O que tienen al menos un acompañante que no asiste
+    renderLista(todos.filter(c => {
+      if (c.asiste === 'no') return true;
+      if (c.acompaniantes && c.acompaniantes.includes('|')) {
+        return c.acompaniantes.split(', ').some(a => a.split('|')[1] === 'no');
+      }
+      return false;
+    }));
+  }
 }
 
 function iniciales(n) { return n.split(' ').slice(0,2).map(p=>p[0]).join('').toUpperCase(); }
