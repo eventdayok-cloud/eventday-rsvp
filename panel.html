@@ -287,7 +287,7 @@ function renderAcomp(acomp) {
       const menu = parts[2];
       const asisteTexto = asiste === 'si' ? '✅' : '❌';
       const menuTexto = menu && menu !== 'Alimentación normal' && menu !== 'Normal' ? ' — ' + menu : '';
-      return '<span class="tag tag-acomp" style="display:block;margin-bottom:3px;">👥 ' + nombre + menuTexto + ' ' + asisteTexto + '</span>';
+      const asisteLabel = asiste === 'si' ? 'Asiste' : 'No asiste'; return '<span class="tag tag-acomp" style="display:block;margin-bottom:3px;">👥 ' + nombre + menuTexto + ' — ' + asisteLabel + '</span>';
     }).join('');
   }
   return '<span class="tag tag-acomp">👥 ' + acomp + '</span>';
@@ -295,9 +295,19 @@ function renderAcomp(acomp) {
 function menuClass(m) { return {vegetariano:'tag-veggie',vegano:'tag-vegan',celiaco:'tag-celiaco'}[m]||'tag-menu'; }
 
 function renderLista(datos) {
-  document.getElementById('count-si').textContent = todos.filter(c=>c.asiste==='si').length;
-  document.getElementById('count-no').textContent = todos.filter(c=>c.asiste==='no').length;
-  document.getElementById('count-total').textContent = todos.length;
+  let totalSi = 0, totalNo = 0;
+  todos.forEach(c => {
+    if (c.asiste === 'si') totalSi++; else totalNo++;
+    if (c.acompaniantes && c.acompaniantes.includes('|')) {
+      c.acompaniantes.split(', ').forEach(a => {
+        const parts = a.split('|');
+        if (parts[1] === 'si') totalSi++; else totalNo++;
+      });
+    }
+  });
+  document.getElementById('count-si').textContent = totalSi;
+  document.getElementById('count-no').textContent = totalNo;
+  document.getElementById('count-total').textContent = totalSi + totalNo;
 
   if (!datos.length) {
     document.getElementById('lista').innerHTML = '<div class="empty">Sin confirmaciones aún</div>';
