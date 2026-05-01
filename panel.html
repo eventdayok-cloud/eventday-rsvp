@@ -284,16 +284,23 @@ function renderListaPlana(filtro) {
   // Construir lista plana de todas las personas
   const personas = [];
   todos.forEach(c => {
-    // Agregar titular
     personas.push({ nombre: c.nombre, asiste: c.asiste, menu: c.menu, cancion: c.cancion, tipo: 'titular', grupo: null });
-    // Agregar acompañantes si es formato dinámico
     if (c.acompaniantes && c.acompaniantes.includes('|')) {
       c.acompaniantes.split(', ').forEach(a => {
         const parts = a.split('|');
-        personas.push({ nombre: parts[0], asiste: parts[1], menu: parts[2] || 'normal', cancion: '', tipo: 'acompaniante', grupo: c.nombre });
+        personas.push({ nombre: parts[0], asiste: parts[1] || 'si', menu: parts[2] || 'normal', cancion: '', tipo: 'acompaniante', grupo: c.nombre });
       });
+    } else if (c.acompaniantes) {
+      // Formato simple - no expandir, ya se ve en la tarjeta del titular
     }
   });
+
+  // Actualizar contadores con todas las personas
+  let totalSi = personas.filter(p => p.asiste === 'si').length;
+  let totalNo = personas.filter(p => p.asiste === 'no').length;
+  document.getElementById('count-si').textContent = totalSi;
+  document.getElementById('count-no').textContent = totalNo;
+  document.getElementById('count-total').textContent = totalSi + totalNo;
 
   // Filtrar
   const filtradas = filtro === 'todos' ? personas : personas.filter(p => p.asiste === filtro);
@@ -306,13 +313,13 @@ function renderListaPlana(filtro) {
   document.getElementById('lista').innerHTML = filtradas.map(p => {
     const menu = menuLabel(p.menu);
     const menuClass2 = menuClass(p.menu);
-    const grupoTexto = p.tipo === 'acompaniante' ? `<div class="card-detail">Flia. ${apellido(p.grupo)}</div>` : '';
-    const icono = p.tipo === 'acompaniante' ? '👥' : '';
+    const grupoTexto = p.tipo === 'acompaniante' ? `<div class="card-detail" style="font-size:12px;color:#9c7e7e;margin-bottom:4px;">Flia. ${apellido(p.grupo)}</div>` : '';
+    const icono = p.tipo === 'acompaniante' ? '👥 ' : '';
     return `
       <div class="card">
         <div class="card-avatar">${iniciales(p.nombre)}</div>
         <div class="card-info">
-          <div class="card-name">${icono ? icono + ' ' : ''}${p.nombre}</div>
+          <div class="card-name">${icono}${p.nombre}</div>
           ${grupoTexto}
           <div class="tags" style="margin-top:4px;">
             ${menu ? `<span class="tag ${menuClass2}">${menu}</span>` : '<span class="tag tag-menu">Menú normal</span>'}
