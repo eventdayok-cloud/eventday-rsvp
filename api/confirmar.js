@@ -121,7 +121,7 @@ export default async function handler(req, res) {
   </div>
 
   <div style="text-align:center;padding-top:20px;border-top:1px solid #e0d4cc;">
-    <img src="https://eventday.ar/wp-content/uploads/2026/01/Logo.webp" alt="EventDay" style="width:100px;max-width:80%;height:auto;margin-bottom:10px;opacity:0.85;"/>
+    <img src="https://eventday.ar/invitacion/wp-content/uploads/2026/05/logo-png-eventday.png" alt="EventDay" style="width:100px;max-width:80%;height:auto;margin-bottom:10px;opacity:0.85;"/>
     <p style="font-size:11px;color:#555;letter-spacing:0.1em;text-transform:uppercase;margin:0;font-family:Arial,sans-serif;">Invitaciones digitales</p>
   </div>
 
