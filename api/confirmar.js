@@ -94,11 +94,15 @@ export default async function handler(req, res) {
       const cancionHtml = cancion ? `
         <div style="padding:14px 0 0;font-size:13px;color:#9c7e7e;font-family:Arial,sans-serif;">🎵 ${cancion}</div>` : '';
 
+      const eventoLower = evento.toLowerCase();
+      const esXV = eventoLower.includes('xv') || eventoLower.includes('15') || eventoLower.includes('quince');
+      const emailOrigen = esXV ? 'mis15@eventday.ar' : 'bodas@eventday.ar';
+      const fromEmail = `EventDay <${emailOrigen}>`;
       await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.RESEND_KEY}` },
         body: JSON.stringify({
-          from: 'EventDay <bodas@eventday.ar>',
+          from: fromEmail,
           to: email_cliente,
           subject: `Nueva confirmación — ${nombre}`,
           html: `<!DOCTYPE html>
